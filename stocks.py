@@ -1,11 +1,11 @@
 import json
-from sharesies import Sharesies
+import sharesies
 
 
 with open('config.json', 'r') as handle:
-    config = json.loads(handle)
+    config = json.loads(handle.read())
 
-client = Sharesies()
+client = sharesies.Client()
 client.login(config['Username'], config['Password'])
 
 companies = client.get_companies()
