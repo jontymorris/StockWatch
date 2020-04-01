@@ -1,0 +1,6 @@
+Yahoo Finance (delayed)
+IEX Cloud
+Alphavantage
+World trading data
+
+
