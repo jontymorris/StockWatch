@@ -59,7 +59,7 @@ def should_buy(market_price, history, margin_percent):
 
         # calculate direction
         moves = np.gradient(history['vwap'])
-        direction = np.average(moves)
+        direction = np.median(moves)
 
         # calculate margin price
         margin_price = history['vwap'][-1]
