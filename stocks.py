@@ -79,27 +79,33 @@ def should_sell(original_price, market_price, margin_percent):
     return percent_change >= margin_percent
 
 
-def scan_market(client):
+def scan_market(client, buy_amount):
     profile = client.get_profile()
-    portfolio = profile['portfolio']
-    companies = client.get_companies()
+    balance = float(profile['user']['wallet_balance'])
 
-    # todo: loop through bought stocks
+    # todo: look to sell stocks
+    portfolio = profile['portfolio']
+    for company in portfolio:
+        pass
 
     # find new stocks to buy
-    # todo: check we have balance
+    companies = client.get_companies()
     for company in companies:
-        price = float(company['market_price'])
-        code = company['code'] + '.NZ'
+        if balance < buy_amount:
+            break
 
-        stock = yfinance.Ticker(code)
+        # todo: don't double invest
+
+        symbol = company['code'] + '.NZ'
+        price = float(company['market_price'])
+
+        stock = yfinance.Ticker(symbol)
         history = stock.history(period='5d', interval='15m')
 
         if should_buy(price, history, 0.004):
-            log(f'Buying $10 of {code}')
-            client.buy(company, 10)
-        else:
-            log(f'Skipping {code}')
+            log(f'Buying ${buy_amount} of {symbol}')
+            client.buy(company, buy_amount)
+            balance -= buy_amount
 
 
 if __name__ == '__main__':
@@ -107,18 +113,17 @@ if __name__ == '__main__':
     config = load_config()
     log('Loaded config')
 
-    # sharesies
+    # init client
     client = sharesies.Client()
     if client.login(config['Username'], config['Password']):
         log('Connected to Sharesies')
     else:
         log('Failed to login', error=True)
     
-    # loop
+    # trade loop
     while True:
-        # check for trading time
         if is_trading_time():
             log('Scanning market')
-            scan_market(client)
+            scan_market(client, config["BuyAmount"])
 
         sleep(30 * 60)
