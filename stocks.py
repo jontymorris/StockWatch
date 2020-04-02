@@ -2,6 +2,43 @@ import json
 import sharesies
 import yfinance
 import numpy as np
+from time import sleep
+from datetime import datetime, timedelta
+
+
+def load_config():
+    with open('config.json', 'r') as handle:
+        return json.loads(handle.read())
+
+
+def get_nz_time():
+    return datetime.utcnow() + timedelta(hours=12)
+
+
+def is_trading_time():
+    now = get_nz_time()
+
+    if now.weekday() < 5:
+        if now.hour >= 11 and now.hour <= 15:
+            return True
+    
+    return False
+
+
+def log(message, error=False):
+    # format the message
+    now = get_nz_time()
+    timestamp = f'[{now.hour+1}:{now.minute}] [{now.day}/{now.month}/{now.year}]'
+    line = f'{timestamp} {message}'
+
+    # console and log
+    print(line)
+    with open('logs.txt', 'a') as handle:
+        handle.write(line + '\n')
+    
+    # stop the program?
+    if error:
+        exit(-1)
 
 
 def vwap(df):
@@ -15,21 +52,24 @@ def vwap(df):
 
 
 def should_buy(market_price, history, margin_percent):
-    # calculate vwap
-    history = history.groupby(history.index.date, group_keys=False)
-    history = history.apply(vwap)
+    try:
+        # calculate vwap
+        history = history.groupby(history.index.date, group_keys=False)
+        history = history.apply(vwap)
 
-    # calculate direction
-    moves = np.gradient(history['vwap'])
-    direction = np.average(moves)
+        # calculate direction
+        moves = np.gradient(history['vwap'])
+        direction = np.average(moves)
 
-    # calculate margin price
-    margin_price = history['vwap'][-1]
-    margin_price -= (margin_price * margin_percent)
+        # calculate margin price
+        margin_price = history['vwap'][-1]
+        margin_price -= (margin_price * margin_percent)
 
-    # agree if going up and below margin
-    if direction > 0 and market_price <= margin_price:
-        return True
+        # agree if going up and below margin
+        if direction > 0 and market_price <= margin_price:
+            return True
+    except:
+        pass
 
     return False
 
@@ -39,16 +79,46 @@ def should_sell(original_price, market_price, margin_percent):
     return percent_change >= margin_percent
 
 
-stock = yfinance.Ticker('SPK.NZ')
-history = stock.history(period='5d', interval='15m')
-market_price = stock.info['bid']
+def scan_market(client):
+    profile = client.get_profile()
+    portfolio = profile['portfolio']
+    companies = client.get_companies()
 
-if should_buy(market_price, history, 0.005):
-    print('We should buy it!')
-else:
-    print('Nope, not buying this one')
+    # todo: loop through bought stocks
 
-if should_sell(history['Close'][-5], market_price, 0.006):
-    print('Sell it now!')
-else:
-    print('Not selling either')
+    # find new stocks to buy
+    # todo: check we have balance
+    for company in companies:
+        price = float(company['market_price'])
+        code = company['code'] + '.NZ'
+
+        stock = yfinance.Ticker(code)
+        history = stock.history(period='5d', interval='15m')
+
+        if should_buy(price, history, 0.004):
+            log(f'Buying $10 of {code}')
+            client.buy(company, 10)
+        else:
+            log(f'Skipping {code}')
+
+
+if __name__ == '__main__':
+    # config
+    config = load_config()
+    log('Loaded config')
+
+    # sharesies
+    client = sharesies.Client()
+    if client.login(config['Username'], config['Password']):
+        log('Connected to Sharesies')
+    else:
+        log('Failed to login', error=True)
+    
+    # loop
+    while True:
+        # check for trading time
+        if is_trading_time():
+            log('Scanning market')
+            scan_market(client)
+
+        sleep(30 * 60)
