@@ -59,14 +59,15 @@ def should_buy(market_price, history, margin_percent):
 
         # calculate direction
         moves = np.gradient(history['vwap'])
-        direction = np.median(moves)
+        median = np.median(moves)
+        average = np.average(moves)
 
         # calculate margin price
         margin_price = history['vwap'][-1]
         margin_price -= (margin_price * margin_percent)
 
         # agree if going up and below margin
-        if direction > 0 and market_price <= margin_price:
+        if median > 0 and average > 0 and market_price <= margin_price:
             return True
     except:
         pass
