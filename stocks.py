@@ -41,6 +41,14 @@ def log(message, error=False):
         exit(-1)
 
 
+def get_code_from_id(fund_id, companies):
+    for company in companies:
+        if company['fund_id'] == fund_id:
+            return company['code'] + '.NZ'
+    
+    return fund_id
+
+
 def vwap(df):
     q = df.Volume.values
     p = (df.Close.values + df.High.values + df.Low.values) / 3
@@ -84,18 +92,33 @@ def scan_market(client, buy_amount):
     profile = client.get_profile()
     balance = float(profile['user']['wallet_balance'])
 
-    # todo: look to sell stocks
+    investments = []
+    companies = client.get_companies()
+
+    # look to sell stocks
     portfolio = profile['portfolio']
     for company in portfolio:
-        pass
+        fund_id = company['fund_id']
+        investments.append(fund_id)
+
+        contribution = float(company['contribution'])
+        current_value = float(company['value'])
+
+        # check for a profit
+        if should_sell(contribution, current_value, 0.07):
+            code = get_code_from_id(fund_id, companies)
+            log(f'Selling ${current_value} of {code}')
+            client.sell(company, float(company['shares']))
 
     # find new stocks to buy
-    companies = client.get_companies()
     for company in companies:
+        # check we have balance
         if balance < buy_amount:
             break
 
-        # todo: don't double invest
+        # don't double invest
+        if company['fund_id'] in investments:
+            continue
 
         symbol = company['code'] + '.NZ'
         price = float(company['market_price'])
@@ -103,6 +126,7 @@ def scan_market(client, buy_amount):
         stock = yfinance.Ticker(symbol)
         history = stock.history(period='5d', interval='15m')
 
+        # is it a bargain
         if should_buy(price, history, 0.004):
             log(f'Buying ${buy_amount} of {symbol}')
             client.buy(company, buy_amount)
