@@ -43,7 +43,7 @@ def log(message, error=False):
 
 def get_code_from_id(fund_id, companies):
     for company in companies:
-        if company['fund_id'] == fund_id:
+        if company['id'] == fund_id:
             return company['code'] + '.NZ'
     
     return fund_id
