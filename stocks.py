@@ -117,7 +117,7 @@ def scan_market(client, buy_amount):
             break
 
         # don't double invest
-        if company['fund_id'] in investments:
+        if company['id'] in investments:
             continue
 
         symbol = company['code'] + '.NZ'
@@ -148,7 +148,7 @@ if __name__ == '__main__':
     # trade loop
     while True:
         if is_trading_time():
-            log('Scanning market')
             scan_market(client, config["BuyAmount"])
+            log('Scanned market')
 
         sleep(30 * 60)
