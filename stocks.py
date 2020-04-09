@@ -105,7 +105,7 @@ def scan_market(client, buy_amount):
         current_value = float(company['value'])
 
         # check for a profit
-        if should_sell(contribution, current_value, 0.007):
+        if should_sell(contribution, current_value, 0.0055):
             code = get_code_from_id(fund_id, companies)
             log(f'Selling ${current_value} of {code}')
             client.sell(company, float(company['shares']))
