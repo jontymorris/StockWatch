@@ -126,6 +126,10 @@ def scan_market(client, buy_amount):
         stock = yfinance.Ticker(symbol)
         history = stock.history(period='5d', interval='15m')
 
+        # ignore penny stocks
+        if price < 1:
+            continue
+
         # is it a bargain
         if should_buy(price, history, 0.004):
             log(f'Buying ${buy_amount} of {symbol}')
