@@ -29,20 +29,21 @@ class Market:
 
             # calculate margin price
             margin_price = history['vwap'][-1]
-            margin_price -= (margin_price * margin_percent)
+            margin_price -= (margin_price * (margin_percent/100))
 
             # agree if going up and below margin
             if median > 0 and average > 0 and market_price <= margin_price:
                 return True
-        except:
-            pass
+
+        except Exception as e:
+            util.log('Warning: ' + e)
 
         return False
 
     @staticmethod
     def should_sell(original_price, market_price, margin_percent):
         ''' Decides if the bot should sell or not '''
-        percent_change = (market_price - original_price) / original_price
+        percent_change = ((market_price - original_price) / original_price) * 100
         return percent_change >= margin_percent
 
     @staticmethod
