@@ -25,8 +25,13 @@ def scan_market(client, buy_amount):
         contribution = float(company['contribution'])
         current_value = float(company['value'])
 
+        # does company give dividends?
+        if util.dividends_soon(company['dividends']):
+            util.log(f'Halting sale of {fund_id}:{code} as dividends are upcoming')
+            continue
+        
         # check for a profit
-        if Market.should_sell(contribution, current_value, 0.0055):
+        if Market.should_sell(contribution, current_value, config.sell_profit_margin):
             code = util.get_code_from_id(fund_id, companies)
             util.log(f'Selling ${current_value} of {code}')
             client.sell(company, float(company['shares']))
@@ -47,12 +52,17 @@ def scan_market(client, buy_amount):
         if price < config.minimum_stock_price:
             continue
 
+        # value shares more as dividends are upcoming
+        dividends_soon = util.dividends_soon(company['dividends'])
+        if config.dividends_bonus > 1:
+            buy_amount = buy_amount * config.dividends_bonus
+
         symbol = company['code'] + '.NZ'
         stock = yfinance.Ticker(symbol)
-        history = stock.history(period='5d', interval='15m')
+        history = stock.history(period='1m', interval='15m')
 
         # is it a bargain
-        if Market.should_buy(price, history, 0.004):
+        if Market.should_buy(price, history, 0.4):
             util.log(f'Buying ${buy_amount} of {symbol}')
             client.buy(company, buy_amount)
             balance -= buy_amount
