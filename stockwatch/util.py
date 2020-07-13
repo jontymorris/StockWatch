@@ -27,3 +27,21 @@ def get_code_from_id(fund_id, companies):
 def get_nz_time():
     ''' Returns NZ datetime object '''
     return datetime.utcnow() + timedelta(hours=12)
+
+def dividends_soon(dividends):
+    ''' Check if dividends are coming up '''
+    for month in dividends.split(', '):
+        util.is_month_close(month.lower()):
+            return True
+    
+    return False
+
+def is_month_close(month):
+    ''' Decide if the month is close to now '''
+    month_number = datetime.strptime(month[:3], '%b').month
+    current_month = get_nz_time().month
+    
+    if current_month >= (month_number - 1) and current_month <= (month_number + 1):
+        return True
+
+    return False
