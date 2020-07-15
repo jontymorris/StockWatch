@@ -1,4 +1,7 @@
 from stockwatch import util
+from datetime import datetime, timedelta
+import numpy as np
+import config
 
 class Market:
 
@@ -17,10 +20,13 @@ class Market:
     @staticmethod
     def should_buy(market_price, history, margin_percent):
         ''' Decides if the bot should buy or not '''
+        
+        np.seterr(divide='ignore', invalid='ignore') # ignore zero devide errors
+
         try:
             # calculate vwap
             history = history.groupby(history.index.date, group_keys=False)
-            history = history.apply(vwap)
+            history = history.apply(Market.vwap)
 
             # calculate direction
             moves = np.gradient(history['vwap'])
@@ -36,7 +42,7 @@ class Market:
                 return True
 
         except Exception as e:
-            util.log('Warning: ' + e)
+            util.log(f'Warning: {e}')
 
         return False
 
@@ -47,13 +53,29 @@ class Market:
         return percent_change >= margin_percent
 
     @staticmethod
-    def is_trading_time():
-        ''' Checks if NZX is open for trading '''
-        #TODO: Change get time till open
-        now = util.get_nz_time()
+    def minutes_till_trading():
+        ''' Time till NZX is open for trading '''
 
-        if now.weekday() < 5:
-            if now.hour >= 11 and now.hour <= 15:
-                return True
+        now = util.get_nz_time()
+        open_dt = datetime.strptime(config.open_time, '%I:%M%p')
+        close_dt = datetime.strptime(config.close_time, '%I:%M%p')
+
+        # market is open today
+        if now.strftime('%A').lower() not in config.days_closed:
+
+            # open now
+            if now.time() >= open_dt.time() and now.time() <= close_dt.time():
+                return 0
+            
+            # hasn't open yet
+            if now.time() < open_dt.time():
+                return (datetime.combine(now, open_dt.time()) - now).total_seconds()/60
         
-        return False
+        # market has closed
+        for i in range(7):
+            future = now + timedelta(days=(i+1))
+            if future.strftime('%A').lower() not in config.days_closed:
+                return (datetime.combine(future, open_dt.time()) - now).total_seconds()/60
+ 
+        util.log("market is never open according to config", error=True)
+
