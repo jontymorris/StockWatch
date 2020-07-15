@@ -14,7 +14,7 @@ def log(message, error=False):
     
     # stop the program?
     if error:
-        exit(-1)
+        exit(error)
 
 def get_code_from_id(fund_id, companies):
     ''' Returns correct NZX code for company '''
@@ -30,10 +30,11 @@ def get_nz_time():
 
 def dividends_soon(dividends):
     ''' Check if dividends are coming up '''
-    for month in dividends.split(', '):
-        util.is_month_close(month.lower()):
-            return True
-    
+    if dividends != '':
+        for month in dividends.split(', '):
+            if is_month_close(month.lower()):
+                return True
+                
     return False
 
 def is_month_close(month):
