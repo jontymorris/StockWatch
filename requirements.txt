@@ -1,3 +1,4 @@
 git+https://github.com/jontymorris/Sharesies-API.git
 numpy
 yfinance
+tqdm
