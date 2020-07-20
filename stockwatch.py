@@ -2,8 +2,8 @@ import sharesies
 import yfinance
 import numpy as np
 from time import sleep
-import config
 from stockwatch import Market, util
+import config
 
 
 def scan_market(client, buy_amount):
@@ -68,7 +68,7 @@ if __name__ == '__main__':
         util.log('Connected to Sharesies')
     else:
         util.log('Failed to login', error=True)
-    
+
     # trade loop
     while True:
         if Market.is_trading_time():
