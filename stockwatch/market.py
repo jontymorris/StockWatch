@@ -7,6 +7,7 @@ class Market:
     @staticmethod
     def vwap(df):
         ''' Calculates Volume-weighted average price '''
+
         q = df.Volume.values
         p = (df.Close.values + df.High.values + df.Low.values) / 3
 
@@ -18,6 +19,7 @@ class Market:
     @staticmethod
     def should_buy(market_price, history, margin_percent):
         ''' Decides if the bot should buy or not '''
+
         try:
             # calculate vwap
             history = history.groupby(history.index.date, group_keys=False)
@@ -43,12 +45,14 @@ class Market:
     @staticmethod
     def should_sell(original_price, market_price, margin_percent):
         ''' Decides if the bot should sell or not '''
+
         percent_change = (market_price - original_price) / original_price
         return percent_change >= margin_percent
 
     @staticmethod
     def is_trading_time():
         ''' Checks if NZX is open for trading '''
+
         # TODO: Change get time till open
         now = util.get_nz_time()
 
