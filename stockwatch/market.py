@@ -1,4 +1,6 @@
+import numpy as np
 from stockwatch import util
+
 
 class Market:
 
@@ -13,14 +15,13 @@ class Market:
 
         return df.assign(vwap=(p * q).cumsum() / q.cumsum())
 
-    
     @staticmethod
     def should_buy(market_price, history, margin_percent):
         ''' Decides if the bot should buy or not '''
         try:
             # calculate vwap
             history = history.groupby(history.index.date, group_keys=False)
-            history = history.apply(vwap)
+            history = history.apply(Market.vwap)
 
             # calculate direction
             moves = np.gradient(history['vwap'])
@@ -34,7 +35,7 @@ class Market:
             # agree if going up and below margin
             if median > 0 and average > 0 and market_price <= margin_price:
                 return True
-        except:
+        except Exception:
             pass
 
         return False
@@ -48,11 +49,11 @@ class Market:
     @staticmethod
     def is_trading_time():
         ''' Checks if NZX is open for trading '''
-        #TODO: Change get time till open
+        # TODO: Change get time till open
         now = util.get_nz_time()
 
         if now.weekday() < 5:
             if now.hour >= 11 and now.hour <= 15:
                 return True
-        
+
         return False
