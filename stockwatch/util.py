@@ -20,6 +20,16 @@ def log(message, error=False):
         exit(-1)
 
 
+def get_fund_ids(portfolio):
+    ''' Get the investments from the portfolio '''
+
+    investments = []
+    for company in portfolio:
+        investments.append(company['fund_id'])
+
+    return investments
+
+
 def get_code_from_id(fund_id, companies):
     ''' Returns correct NZX code for company '''
 

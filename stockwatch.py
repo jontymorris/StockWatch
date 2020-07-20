@@ -6,21 +6,11 @@ from stockwatch import Market, util
 import config
 
 
-def scan_market(client, buy_amount):
-    ''' Scan market to make informed buy/sell decisions '''
-
-    profile = client.get_profile()
-    balance = float(profile['user']['wallet_balance'])
-
-    investments = []
-    companies = client.get_companies()
-
-    # look to sell stocks
-    portfolio = profile['portfolio']
+def perform_selling(client, portfolio, companies):
+    ''' Look to sell stocks from the portfolio '''
 
     for company in portfolio:
         fund_id = company['fund_id']
-        investments.append(fund_id)
 
         contribution = float(company['contribution'])
         current_value = float(company['value'])
@@ -31,9 +21,11 @@ def scan_market(client, buy_amount):
             util.log(f'Selling ${current_value} of {code}')
             client.sell(company, float(company['shares']))
 
-    # find new stocks to buy
-    for company in companies:
 
+def perform_buying(client, investments, companies, balance, buy_amount):
+    ''' Find new stocks to buy from the companies '''
+
+    for company in companies:
         # check we have balance
         if balance < buy_amount:
             break
@@ -56,6 +48,21 @@ def scan_market(client, buy_amount):
             util.log(f'Buying ${buy_amount} of {symbol}')
             client.buy(company, buy_amount)
             balance -= buy_amount
+
+
+def scan_market(client, buy_amount):
+    ''' Scan market to make informed buy/sell decisions '''
+
+    profile = client.get_profile()
+    balance = float(profile['user']['wallet_balance'])
+
+    companies = client.get_companies()
+
+    portfolio = profile['portfolio']
+    investments = util.get_fund_ids(portfolio)
+
+    perform_selling(client, portfolio, companies)
+    perform_buying(client, investments, companies, balance, buy_amount)
 
 
 if __name__ == '__main__':
