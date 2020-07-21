@@ -1,3 +1,6 @@
+# Pro tip: create you own config.py
+# by using this as a template
+
 ''' ========= LOGIN =========== '''
 username = 'your.email@mail.com'
 password = 'password123'
