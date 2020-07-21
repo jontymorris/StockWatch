@@ -17,11 +17,11 @@ def perform_selling(client, portfolio, companies, dividends):
 
         # does company give dividends?
         if fund_id in dividends:
-            util.log(f'Halting sale of {fund_id}:{code} as dividends are upcoming')
+            util.log(f'Not selling {fund_id}:{code} due to dividends')
             continue
-        
-        # check for a profit
-        if Market.should_sell(contribution, current_value, config.sell_profit_margin):
+
+        # sell if we're making a profit
+        if Market.should_sell(contribution, current_value):
             code = util.get_code_from_id(fund_id, companies)
             util.log(f'Selling ${current_value} of {code}')
             client.sell(company, float(company['shares']))
@@ -31,9 +31,7 @@ def perform_buying(client, investments, companies, balance):
     ''' Find new stocks to buy from the companies '''
 
     for company in companies:
-        # check we have enough balance
-        if balance < config.buy_amount:
-            break
+        buy_amount = config.buy_amount
 
         # don't double invest
         if company['id'] in investments:
@@ -47,31 +45,31 @@ def perform_buying(client, investments, companies, balance):
         # value shares more as dividends are upcoming
         dividends_soon = util.dividends_soon(company['dividends'])
         if dividends_soon and config.dividends_bonus > 1:
-            buy_amount = buy_amount * config.dividends_bonus
+            buy_amount *= config.dividends_bonus
 
         symbol = company['code'] + '.NZ'
         stock = yfinance.Ticker(symbol)
         history = stock.history(period='1mo', interval='15m')
 
-        # is it a bargain
+        # buy if it is a bargain
         if Market.should_buy(price, history, 0.4):
 
             # check we have balance
             if balance < buy_amount:
-                util.log(f'Want to buy {symbol} but not enough money in portfolio!')
+                util.log(f'Want to buy {symbol} but not enough $$$')
                 break
-            
+
             # buy
             util.log(f'Buying ${buy_amount} of {symbol}')
             client.buy(company, buy_amount)
             balance -= buy_amount
-        
+
 
 def scan_market(client):
     ''' Scan market to make informed buy/sell decisions '''
 
     profile = client.get_profile()
-    
+
     # gather the information
     balance = float(profile['user']['wallet_balance'])
     portfolio = profile['portfolio']
@@ -86,7 +84,7 @@ def scan_market(client):
 
 
 if __name__ == '__main__':
-    
+
     # config
     util.log('Loaded config')
 
@@ -109,6 +107,5 @@ if __name__ == '__main__':
             sleep(config.scan_interval * 60)
 
         else:
-            util.log(f'Market is now closed, waiting till it reopens in {round(minutes_till_open/60, 2)}h')
+            util.log(f'Waiting {round(minutes_till_open/60, 2)}h till reopen')
             sleep(minutes_till_open * 60)
-        

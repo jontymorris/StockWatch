@@ -45,21 +45,28 @@ def get_nz_time():
 
     return datetime.utcnow() + timedelta(hours=12)
 
+
 def dividends_soon(dividends):
     ''' Check if dividends are coming up '''
+
     if dividends != '':
         for month in dividends.split(', '):
             if is_month_close(month.lower()):
                 return True
-                
+
     return False
+
 
 def is_month_close(month):
     ''' Decide if the month is close to now '''
+
     month_number = datetime.strptime(month[:3], '%b').month
     current_month = get_nz_time().month
-    
-    if current_month >= (month_number - 1) and current_month <= (month_number + 1):
+
+    has_month_passed = current_month >= (month_number - 1)
+    is_close_enough = current_month <= (month_number + 1)
+
+    if not has_month_passed and is_close_enough:
         return True
 
     return False

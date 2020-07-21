@@ -1,7 +1,6 @@
 import numpy as np
 from stockwatch import util
 from datetime import datetime, timedelta
-import numpy as np
 import config
 
 
@@ -22,7 +21,7 @@ class Market:
     @staticmethod
     def should_buy(market_price, history, margin_percent):
         ''' Decides if the bot should buy or not '''
-        
+
         # ignore zero divide errors
         np.seterr(divide='ignore', invalid='ignore')
 
@@ -50,14 +49,14 @@ class Market:
         return False
 
     @staticmethod
-    def should_sell(original_price, market_price, margin_percent):
+    def should_sell(original_price, market_price):
         ''' Decides if the bot should sell or not '''
-        
+
         difference = market_price - original_price
         percent_change = (difference / original_price) * 100
-        
+
         # have we reached our profit percentage?
-        return percent_change >= margin_percent
+        return percent_change >= config.sell_profit_margin
 
     @staticmethod
     def minutes_till_trading():
@@ -73,15 +72,17 @@ class Market:
             # open now
             if now.time() >= open_dt.time() and now.time() <= close_dt.time():
                 return 0
-            
+
             # hasn't open yet
             if now.time() < open_dt.time():
-                return (datetime.combine(now, open_dt.time()) - now).total_seconds()/60
-        
+                open_time = datetime.combine(now, open_dt.time()) - now
+                return open_time.total_seconds() / 60
+
         # market has closed
         for i in range(7):
             future = now + timedelta(days=(i+1))
             if future.strftime('%A').lower() not in config.days_closed:
-                return (datetime.combine(future, open_dt.time()) - now).total_seconds()/60
- 
+                next_open = datetime.combine(future, open_dt.time()) - now
+                return next_open.total_seconds() / 60
+
         util.log("market is never open according to config", error=True)
