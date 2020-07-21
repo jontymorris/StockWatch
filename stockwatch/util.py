@@ -17,7 +17,7 @@ def log(message, error=False):
 
     # stop the program?
     if error:
-        exit(-1)
+        exit(error)
 
 
 def get_fund_ids(portfolio):
@@ -44,3 +44,22 @@ def get_nz_time():
     ''' Returns NZ datetime object '''
 
     return datetime.utcnow() + timedelta(hours=12)
+
+def dividends_soon(dividends):
+    ''' Check if dividends are coming up '''
+    if dividends != '':
+        for month in dividends.split(', '):
+            if is_month_close(month.lower()):
+                return True
+                
+    return False
+
+def is_month_close(month):
+    ''' Decide if the month is close to now '''
+    month_number = datetime.strptime(month[:3], '%b').month
+    current_month = get_nz_time().month
+    
+    if current_month >= (month_number - 1) and current_month <= (month_number + 1):
+        return True
+
+    return False
