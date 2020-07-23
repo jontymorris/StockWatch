@@ -31,7 +31,6 @@ def perform_buying(client, investments, companies, balance):
     ''' Find new stocks to buy from the companies '''
 
     for company in companies:
-        buy_amount = config.buy_amount
 
         # don't double invest
         if company['id'] in investments:
@@ -42,11 +41,6 @@ def perform_buying(client, investments, companies, balance):
         if price < config.minimum_stock_price:
             continue
 
-        # value shares more as dividends are upcoming
-        dividends_soon = util.dividends_soon(company['dividends'])
-        if dividends_soon and config.dividends_bonus > 1:
-            buy_amount *= config.dividends_bonus
-
         symbol = company['code'] + '.NZ'
         stock = yfinance.Ticker(symbol)
         history = stock.history(period='1mo', interval='15m')
@@ -54,12 +48,19 @@ def perform_buying(client, investments, companies, balance):
         # buy if it is a bargain
         if Market.should_buy(price, history, 0.4):
 
+            buy_amount = config.buy_amount
+
+            # value shares more as dividends are upcoming
+            dividends_soon = util.dividends_soon(company['dividends'])
+            if dividends_soon and config.dividends_bonus > 1:
+                buy_amount *= config.dividends_bonus
+
             # check we have balance
             if balance < buy_amount:
                 util.log(f'Want to buy {symbol} but not enough $$$')
                 break
 
-            # buy
+            # submit the buy order
             util.log(f'Buying ${buy_amount} of {symbol}')
             client.buy(company, buy_amount)
             balance -= buy_amount
