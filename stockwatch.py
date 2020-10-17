@@ -2,42 +2,35 @@ import sharesies
 import yfinance
 from time import sleep
 from tqdm import tqdm
-import config
 from stockwatch import Market, util
+import config
 
 
-def scan_market(client, buy_amount):
-    ''' Scan market to make informed buy/sell decisions '''
-
-    profile = client.get_profile()
-    balance = float(profile['user']['wallet_balance'])
-
-    investments = []
-    companies = client.get_companies()
-
-    # look to sell stocks
-    portfolio = profile['portfolio']
+def perform_selling(client, portfolio, companies, dividends):
+    ''' Look to sell stocks from the portfolio '''
 
     for company in portfolio:
         fund_id = company['fund_id']
-        investments.append(fund_id)
 
         contribution = float(company['contribution'])
         current_value = float(company['value'])
 
         # does company give dividends?
-        if fund_id in profile['upcoming_dividends']:
-            util.log(f'Halting sale of {fund_id}:{code} as dividends are upcoming')
+        if fund_id in dividends:
+            util.log(f'Not selling {fund_id}:{code} due to dividends')
             continue
-        
-        # check for a profit
-        if Market.should_sell(contribution, current_value, config.sell_profit_margin):
+
+        # sell if we're making a profit
+        if Market.should_sell(contribution, current_value):
             code = util.get_code_from_id(fund_id, companies)
             util.log(f'Selling ${current_value} of {code}')
             client.sell(company, float(company['shares']))
 
-    # find new stocks to buy
-    for company in tqdm(companies, unit=' companies'):
+
+def perform_buying(client, investments, companies, balance):
+    ''' Find new stocks to buy from the companies '''
+
+    for company in companies:
 
         # don't double invest
         if company['id'] in investments:
@@ -48,31 +41,51 @@ def scan_market(client, buy_amount):
         if price < config.minimum_stock_price:
             continue
 
-        # value shares more as dividends are upcoming
-        dividends_soon = util.dividends_soon(company['dividends'])
-        if config.dividends_bonus > 1:
-            buy_amount = buy_amount * config.dividends_bonus
-
         symbol = company['code'] + '.NZ'
         stock = yfinance.Ticker(symbol)
         history = stock.history(period='1mo', interval='15m')
 
-        # is it a bargain
+        # buy if it is a bargain
         if Market.should_buy(price, history, 0.4):
+
+            buy_amount = config.buy_amount
+
+            # value shares more as dividends are upcoming
+            dividends_soon = util.dividends_soon(company['dividends'])
+            if dividends_soon and config.dividends_bonus > 1:
+                buy_amount *= config.dividends_bonus
 
             # check we have balance
             if balance < buy_amount:
-                util.log(f'Want to buy {symbol} but not enough money in portfolio!')
+                util.log(f'Want to buy {symbol} but not enough $$$')
                 break
-            
-            # buy
+
+            # submit the buy order
             util.log(f'Buying ${buy_amount} of {symbol}')
             client.buy(company, buy_amount)
             balance -= buy_amount
-        
+
+
+def scan_market(client):
+    ''' Scan market to make informed buy/sell decisions '''
+
+    profile = client.get_profile()
+
+    # gather the information
+    balance = float(profile['user']['wallet_balance'])
+    portfolio = profile['portfolio']
+    dividends = profile['upcoming_dividends']
+
+    investments = util.get_fund_ids(portfolio)
+    companies = client.get_companies()
+
+    # it's show time
+    perform_selling(client, portfolio, companies, dividends)
+    perform_buying(client, investments, companies, balance)
+
 
 if __name__ == '__main__':
-    
+
     # config
     util.log('Loaded config')
 
@@ -82,18 +95,18 @@ if __name__ == '__main__':
         util.log('Connected to Sharesies')
     else:
         util.log('Failed to login', error=True)
-    
+
     # trade loop
     while True:
         minutes_till_open = Market.minutes_till_trading()
 
         if minutes_till_open == 0:
             util.log('Market is currently open!')
-            scan_market(client, config.buy_amount)
+            scan_market(client)
+
             util.log(f'Scanned market - next scan in {config.scan_interval}m')
             sleep(config.scan_interval * 60)
 
         else:
-            util.log(f'Market is now closed, waiting till it reopens in {round(minutes_till_open/60, 2)}h')
+            util.log(f'Waiting {round(minutes_till_open/60, 2)}h till reopen')
             sleep(minutes_till_open * 60)
-        
