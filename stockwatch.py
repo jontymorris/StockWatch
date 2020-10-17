@@ -51,9 +51,10 @@ def perform_buying(client, investments, companies, balance):
             buy_amount = config.buy_amount
 
             # value shares more as dividends are upcoming
-            dividends_soon = util.dividends_soon(company['dividends'])
-            if dividends_soon and config.dividends_bonus > 1:
-                buy_amount *= config.dividends_bonus
+            if company['dividends']:
+                dividends_soon = util.dividends_soon(company['dividends'])
+                if dividends_soon and config.dividends_bonus > 1:
+                    buy_amount *= config.dividends_bonus
 
             # check we have balance
             if balance < buy_amount:

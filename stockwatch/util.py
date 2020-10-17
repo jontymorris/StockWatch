@@ -46,13 +46,12 @@ def get_nz_time():
     return datetime.utcnow() + timedelta(hours=12)
 
 
-def dividends_soon(dividends):
+def dividends_soon(dividend_months):
     ''' Check if dividends are coming up '''
 
-    if dividends != '':
-        for month in dividends.split(', '):
-            if is_month_close(month.lower()):
-                return True
+    for month in dividend_months.split(', '):
+        if is_month_close(month.lower()):
+            return True
 
     return False
 
