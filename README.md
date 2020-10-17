@@ -25,7 +25,8 @@
 ## Quick start
 
 - Create a copy of `config.example.py` called `config.py`
-- Fill in your `username` and `password` in config.py
+- Fill in your **username** and **password** in config.py
+- Get dependancies - `python3 -m pip install -r requirements.txt`
 - Run it - `python3 stockwatch.py`
 
 ## Sharesies
